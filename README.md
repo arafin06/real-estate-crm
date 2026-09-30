@@ -1,58 +1,248 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Real Estate Agent CRM — Laravel API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A production-ready SaaS backend for a real estate agent CRM platform. Built with Laravel 11, MySQL, and Stripe. Powers a Vue 3 SPA frontend with role-based access, deal pipeline management, subscription billing, and real-time analytics.
 
-## About Laravel
+> **Portfolio project** demonstrating full-stack SaaS architecture with real-world U.S. real estate domain knowledge.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Live Demo
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The frontend is paired at: **[github.com/arafin06/real-estate-crm-frontend](https://github.com/arafin06/real-estate-crm-frontend)**
 
-## Learning Laravel
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | admin@recrm.demo | Demo1234! |
+| Agent (Pro Plan) | sarah@recrm.demo | Demo1234! |
+| Agent (Free Plan) | marcus@recrm.demo | Demo1234! |
+| Client | client@recrm.demo | Demo1234! |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Tech Stack
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+| Layer | Technology |
+|---|---|
+| Framework | Laravel 11 |
+| Language | PHP 8.3 |
+| Database | MySQL 8 |
+| Authentication | Laravel Sanctum (token-based) |
+| Payments | Stripe (Checkout, Billing Portal, Webhooks) |
+| Queue | Laravel Queue (database driver) |
+| File Storage | Laravel local storage with public symlink |
+| Email | Laravel Mail (Mailtrap for dev) |
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Features
 
-```bash
-composer require laravel/boost --dev
+### Authentication & Authorization
+- Token-based API auth via Laravel Sanctum
+- Three roles: `super_admin`, `agent`, `client`
+- Role middleware gates all protected routes
+- Soft deletes on users
 
-php artisan boost:install
+### Property Management
+- Full CRUD for property listings
+- Multiple image upload with primary image designation
+- Filter by type, listing type, status, city, price range
+- Paginated results (12 per page)
+
+### Client / Contact Management
+- Full CRUD for client profiles
+- Buyer qualification fields: budget range, pre-approval amount, purchase timeline
+- Polymorphic notes system — shared with deals and tasks
+- Contact history timeline
+
+### Deal Pipeline
+- 7-stage pipeline: Lead → Prospect → Showing → Offer Made → Under Contract → Closed → Lost
+- Commission auto-calculation from deal value and rate
+- `closed_at` timestamp set on stage transition (accurate commission reporting)
+- Activity log: every stage change recorded with timestamp and user
+- Lost reason tracking
+- Kanban board data endpoint (grouped by stage)
+
+### Task & Follow-up System
+- Four statuses: Incomplete / In Progress / Complete / Closed
+- Priority levels: Urgent / High / Medium / Low
+- Recurring tasks: daily, weekly (with day picker), biweekly, monthly, yearly
+- Occurrence timeline: each completion logged with optional note, next due date auto-advances
+- Subtasks with self-referential parent relationship
+- Polymorphic notes on tasks
+- Grouped endpoint: overdue / today / tomorrow / this week / later / complete / closed
+
+### Dashboard & Analytics
+- Summary: active listings, open deals, pipeline value, commission YTD, conversion rate, overdue tasks
+- Pipeline breakdown by stage (count + value)
+- Monthly closed deals chart (last 6 months, zero-filled)
+- Tasks due today
+- Recent deal activity feed (last 10)
+- Top clients by deal volume
+- Agent-scoped: agents see own data, super_admin sees all
+
+### Subscription Billing (Stripe)
+- Free plan: up to 5 property listings
+- Pro plan: $29/month, unlimited
+- Stripe Checkout hosted payment flow
+- Customer Portal for subscription management
+- Webhook handling: `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed`, `invoice.payment_succeeded`
+- Signature verification on all webhook events
+- Free-tier middleware gate on property creation (402 response)
+
+### Profile Management
+- Update name, email, phone
+- Password change with current password verification
+- Avatar upload (stored in public disk)
+
+---
+
+## API Structure
+
+```
+POST   /api/register
+POST   /api/login
+POST   /api/logout
+GET    /api/me
+
+GET    /api/dashboard
+
+GET    /api/properties
+POST   /api/properties
+GET    /api/properties/{id}
+PATCH  /api/properties/{id}
+DELETE /api/properties/{id}
+POST   /api/properties/{id}/images
+DELETE /api/properties/{id}/images/{imageId}
+PATCH  /api/properties/{id}/images/{imageId}/primary
+
+GET    /api/clients
+POST   /api/clients
+GET    /api/clients/{id}
+PATCH  /api/clients/{id}
+DELETE /api/clients/{id}
+POST   /api/clients/{id}/notes
+DELETE /api/clients/{id}/notes/{noteId}
+
+GET    /api/deals/kanban
+GET    /api/deals
+POST   /api/deals
+GET    /api/deals/{id}
+PATCH  /api/deals/{id}
+DELETE /api/deals/{id}
+PATCH  /api/deals/{id}/stage
+POST   /api/deals/{id}/notes
+DELETE /api/deals/{id}/notes/{noteId}
+
+GET    /api/tasks/summary
+GET    /api/tasks/grouped
+GET    /api/tasks
+POST   /api/tasks
+GET    /api/tasks/{id}
+PATCH  /api/tasks/{id}
+DELETE /api/tasks/{id}
+POST   /api/tasks/{id}/subtasks
+POST   /api/tasks/{id}/notes
+DELETE /api/tasks/{id}/notes/{noteId}
+POST   /api/tasks/{id}/complete-occurrence
+
+GET    /api/profile
+PATCH  /api/profile
+POST   /api/profile/password
+POST   /api/profile/avatar
+
+POST   /api/subscription/checkout
+POST   /api/subscription/portal
+POST   /api/webhooks/stripe
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## Database Schema
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Table | Purpose |
+|---|---|
+| `users` | Agents, admins, clients with role + subscription status |
+| `properties` | Listings with full address and spec fields |
+| `property_images` | Multiple images per property, primary flag |
+| `clients` | Contact profiles with buyer qualification fields |
+| `notes` | Polymorphic — attached to clients, deals, or tasks |
+| `deals` | Pipeline deals with stage, financials, closed_at |
+| `deal_activities` | Immutable log of every stage change |
+| `tasks` | Tasks with recurrence, subtasks (self-referential), priority |
+| `task_occurrences` | Recurring task completion history |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Local Setup
 
-## Security Vulnerabilities
+### Requirements
+- PHP 8.3
+- Composer
+- MySQL 8
+- Node.js 18+
+- XAMPP or Laravel Herd
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Installation
 
-## License
+```bash
+git clone https://github.com/arafin06/real-estate-crm.git
+cd real-estate-crm
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+composer install
+
+cp .env.example .env
+php artisan key:generate
+```
+
+Configure `.env`:
+```env
+DB_DATABASE=real_estate_crm
+DB_USERNAME=root
+DB_PASSWORD=
+
+STRIPE_KEY=pk_test_...
+STRIPE_SECRET=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
+STRIPE_SUCCESS_URL=http://localhost:5173/settings?subscription=success
+STRIPE_CANCEL_URL=http://localhost:5173/settings?subscription=cancelled
+```
+
+```bash
+php artisan migrate --seed
+php artisan storage:link
+php artisan serve
+```
+
+API runs at `http://localhost:8000`
+
+### Stripe Webhooks (local)
+```bash
+stripe listen --events checkout.session.completed,customer.subscription.deleted,invoice.payment_failed,invoice.payment_succeeded --forward-to localhost:8000/api/webhooks/stripe
+```
+
+---
+
+## Demo Data
+
+The seeder creates two agents with different subscription tiers, realistic U.S. property listings across Austin TX and Nashville TN, clients with buyer qualification data and contact history, deals spread across all 7 pipeline stages, and tasks including recurring and subtask examples.
+
+---
+
+## Architecture Notes
+
+- **Subscription middleware** gates `POST /api/properties` at 5 listings for free users, returns `402` with `{ upgrade: true }` payload that the frontend intercepts globally
+- **`closed_at` timestamp** on deals prevents commission figures from shifting when closed deals are later edited
+- **Polymorphic notes** (`notable_type` / `notable_id`) allow a single `notes` table to serve clients, deals, and tasks without schema duplication
+- **Recurring task occurrences** are logged to a separate `task_occurrences` table rather than creating new task records, keeping the task list clean while preserving full completion history
+- **Role scoping** is applied at the query level in every controller — agents see only their own data, super_admin bypasses all ownership checks
+
+---
+
+## Author
+
+**Niaz Md. Arafin Haque**
+Director of Operations — Global Softel Inc.
+5+ years in U.S. real estate and commercial lending operations
+
+[github.com/arafin06](https://github.com/arafin06)
